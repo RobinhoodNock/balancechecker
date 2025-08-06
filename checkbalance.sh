@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 SOCKET="$HOME/nockchain/.socket/nockchain_npc.sock"
@@ -23,19 +24,34 @@ if [[ ! -f "$CSV_FILE" ]]; then
 fi
 
 echo "Using CSV file: $CSV_FILE"
+echo
 
-TOTAL_NICKS=$(tr -d '\000' < "$CSV_FILE" | awk -F',' '
-  NR > 1 && $3 ~ /^[0-9]+$/ { sum += $3 }
-  END { print sum }
-')
+TOTAL_NICKS=0
+NOTE_NUM=1
 
-if [[ -z "$TOTAL_NICKS" || "$TOTAL_NICKS" == "0" ]]; then
+# Use process substitution to keep variables in main shell scope
+while IFS=',' read -r name_first name_last assets block_height source_hash; do
+  # Skip header line or malformed lines
+  if [[ "$name_first" == "name_first" ]]; then
+    continue
+  fi
+  if [[ "$assets" =~ ^[0-9]+$ ]]; then
+    NICKS=$assets
+    NOCKS=$(awk -v n="$NICKS" 'BEGIN { printf "%.4f", n/65536 }')
+    echo "Note $NOTE_NUM: $NICKS Nicks / ≈ $NOCKS Nocks"
+    TOTAL_NICKS=$((TOTAL_NICKS + NICKS))
+    NOTE_NUM=$((NOTE_NUM + 1))
+  fi
+done < <(tr -d '\000' < "$CSV_FILE")
+
+if (( TOTAL_NICKS == 0 )); then
   echo "ℹ️  No assets found for pubkey."
   exit 0
 fi
 
-DECIMAL_NOCKS=$(awk -v t="$TOTAL_NICKS" 'BEGIN { printf "%.4f", t/65536 }')
+TOTAL_NOCKS=$(awk -v t="$TOTAL_NICKS" 'BEGIN { printf "%.4f", t/65536 }')
 
-echo "Balance for pubkey: $PUBKEY"
+echo
+echo "Total balance for pubkey: $PUBKEY"
 echo "  $TOTAL_NICKS Nicks"
-echo "  ≈ $DECIMAL_NOCKS Nocks (decimal)"
+echo "  ≈ $TOTAL_NOCKS Nocks (decimal)"
