@@ -1,24 +1,30 @@
-# balancechecker
-Balance Checker for Nicks and Nocks in Nockchain
+Nockchain Balance Checker Script
+What it does
 
-What this script does:
+This script helps you check your Nockchain wallet balance by public key. It:
 
-    Ask you for a public key — the identifier for your Nockchain wallet.
+    Prompts you to enter your public key — a unique identifier for your wallet.
 
-    Check if a file with your notes exists for that public key.
+    Checks if a CSV file with your notes exists for that public key.
 
-        If it doesn’t, it will automatically create that file by asking Nockchain for all your notes.
+        If it doesn't exist, the script automatically generates it by querying your wallet.
 
-    Add up all your assets (called "Nicks") from that file.
+    Reads all your notes from the CSV, each representing an amount of "Nicks" (the smallest asset unit).
 
-        Each asset is a tiny part of your total balance.
+    Displays each note’s balance individually in both Nicks and Nocks (where 1 Nock = 65,536 Nicks).
 
-    Convert the total Nicks into Nocks — the bigger unit.
+    Calculates and displays the total balance for your wallet in both Nicks and Nocks.
 
-        (1 Nock = 65,536 Nicks)
+Why use it?
 
-    Show you your balance both as:
+    You don’t need to manually sum your wallet’s assets.
 
-        Total Nicks (smallest unit)
+    Easily see detailed balances per note and a clear total.
 
-        Total Nocks (decimal number)
+    Automatically fetches data if it’s not already available.
+
+Usage
+
+Run the script and enter your public key when prompted:
+
+bash ./checkbalance.sh
