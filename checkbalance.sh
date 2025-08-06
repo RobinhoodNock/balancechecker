@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 SOCKET="$HOME/nockchain/.socket/nockchain_npc.sock"
