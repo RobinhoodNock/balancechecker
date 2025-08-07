@@ -4,34 +4,41 @@ SOCKET="$HOME/nockchain/.socket/nockchain_npc.sock"
 
 read -p "Enter pubkey: " PUBKEY
 
+# Validate pubkey format (alphanumeric only)
 if [[ ! "$PUBKEY" =~ ^[a-zA-Z0-9]+$ ]]; then
-  echo "Invalid pubkey format."
+  echo "❌ Invalid pubkey format. Only alphanumeric characters are allowed."
   exit 1
 fi
 
 CSV_FILE="notes-${PUBKEY}.csv"
 
-if [[ ! -f "$CSV_FILE" ]]; then
-  echo "CSV file not found. Generating..."
-  nockchain-wallet --nockchain-socket "$SOCKET" list-notes-by-pubkey-csv "$PUBKEY"
-  sleep 1
-
-  if [[ ! -f "$CSV_FILE" ]]; then
-    echo "Failed to generate CSV file for pubkey."
-    exit 1
-  fi
+# Delete old CSV if it exists
+if [[ -f "$CSV_FILE" ]]; then
+  echo "🧹 Removing old CSV file: $CSV_FILE"
+  rm -f "$CSV_FILE"
 fi
 
-echo "Using CSV file: $CSV_FILE"
+# Generate new CSV
+echo "📄 Generating new CSV file for pubkey: $PUBKEY"
+nockchain-wallet --nockchain-socket "$SOCKET" list-notes-by-pubkey-csv "$PUBKEY"
+sleep 1
+
+# Confirm new file was created
+if [[ ! -f "$CSV_FILE" ]]; then
+  echo "❌ Failed to generate CSV file for pubkey."
+  exit 1
+fi
+
+echo "✅ Using CSV file: $CSV_FILE"
 echo
 
 TOTAL_NICKS=0
 NOTE_NUM=1
 
-# Use process substitution to keep variables in main shell scope
+# Read and process the CSV
 while IFS=',' read -r name_first name_last assets block_height source_hash; do
-  # Skip header line or malformed lines
-  if [[ "$name_first" == "name_first" ]]; then
+  # Skip header or malformed lines
+  if [[ "$name_first" == "name_first" || -z "$assets" ]]; then
     continue
   fi
   if [[ "$assets" =~ ^[0-9]+$ ]]; then
@@ -41,16 +48,17 @@ while IFS=',' read -r name_first name_last assets block_height source_hash; do
     TOTAL_NICKS=$((TOTAL_NICKS + NICKS))
     NOTE_NUM=$((NOTE_NUM + 1))
   fi
-done < <(tr -d '\000' < "$CSV_FILE")
+done < <(tr -d '\000' < "$CSV_FILE")  # Strip null bytes just in case
 
+# Check total balance
 if (( TOTAL_NICKS == 0 )); then
-  echo "ℹ️  No assets found for pubkey."
+  echo "ℹ️  No assets found for pubkey: $PUBKEY"
   exit 0
 fi
 
 TOTAL_NOCKS=$(awk -v t="$TOTAL_NICKS" 'BEGIN { printf "%.4f", t/65536 }')
 
 echo
-echo "Total balance for pubkey: $PUBKEY"
+echo "💰 Total balance for pubkey: $PUBKEY"
 echo "  $TOTAL_NICKS Nicks"
 echo "  ≈ $TOTAL_NOCKS Nocks (decimal)"
