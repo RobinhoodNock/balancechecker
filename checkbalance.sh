@@ -18,9 +18,11 @@ if [[ -f "$CSV_FILE" ]]; then
   rm -f "$CSV_FILE"
 fi
 
-# Generate new CSV
+# Generate new CSV (suppress output from wallet command)
 echo "📄 Generating new CSV file for pubkey: $PUBKEY"
-nockchain-wallet --nockchain-socket "$SOCKET" list-notes-by-pubkey-csv "$PUBKEY"
+nockchain-wallet --nockchain-socket "$SOCKET" list-notes-by-pubkey-csv "$PUBKEY" > /dev/null 2>&1
+
+# Wait briefly for file creation
 sleep 1
 
 # Confirm new file was created
@@ -35,9 +37,8 @@ echo
 TOTAL_NICKS=0
 NOTE_NUM=1
 
-# Read and process the CSV
+# Read and process the CSV, skipping header and malformed lines
 while IFS=',' read -r name_first name_last assets block_height source_hash; do
-  # Skip header or malformed lines
   if [[ "$name_first" == "name_first" || -z "$assets" ]]; then
     continue
   fi
